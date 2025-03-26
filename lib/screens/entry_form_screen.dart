@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../network_helper.dart';
+import '../utils/network_helper.dart';
 import '../widgets/common_footer.dart';
 
 class EntryFormScreen extends StatefulWidget {

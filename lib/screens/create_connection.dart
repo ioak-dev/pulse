@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import '../model/item.dart';
-import '../db_helper.dart';
-import '../network_helper.dart';
+import '../utils/db_helper.dart';
+import '../utils/network_helper.dart';
 import 'home_screen.dart';
 import 'description_screen.dart';
 import '../widgets/common_footer.dart';
+import '../styles/colors.dart';
 
 class CreateConnection extends StatefulWidget {
   final Item? item;
@@ -119,19 +120,50 @@ class _CreateConnectionScreenState extends State<CreateConnection> {
       appBar: AppBar(
         title: const Text("Create Connection"),
         automaticallyImplyLeading: false,
+        titleTextStyle: const TextStyle(
+          color: AppColors.primaryColor,
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          fontFamily: "Roboto"
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(15),
+          child: Container(
+            color: Colors.grey,
+            height: 1,
+          ),
+        ),
+        centerTitle: true,
+
       ),
-      body: Padding(
+      body: Center(
+    child: Container(
+      margin: const EdgeInsets.fromLTRB(0, 20, 0, 20),
+      child:Padding(
         padding: const EdgeInsets.fromLTRB(16, 25, 16, 16),
         child: Form(
           key: _formKey,
           child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               DropdownButtonFormField<String>(
                 value: _selectedAppName,
                 decoration: const InputDecoration(
                   labelText: "App name",
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                      borderRadius:BorderRadius.all(Radius.circular(8)),
+                      borderSide: BorderSide(color: AppColors.primaryColor, width: 1),
+                  ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(8)),
+                      borderSide: BorderSide(color: AppColors.primaryColor, width: 1), // Default border color
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(8)),
+                      borderSide: BorderSide(color: Colors.blue, width: 1), // Border when focused
+                    )
                 ),
                 items: const [
                   DropdownMenuItem(value: "App1", child: Text("App1")),
@@ -152,7 +184,18 @@ class _CreateConnectionScreenState extends State<CreateConnection> {
                 controller: _connectionNameController,
                 decoration: const InputDecoration(
                   labelText: "Connection name",
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius:BorderRadius.all(Radius.circular(8)),
+                    borderSide: BorderSide(color: AppColors.primaryColor, width: 1),
+                  ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(8)),
+                      borderSide: BorderSide(color: AppColors.primaryColor, width: 1), // Default border color
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(8)),
+                      borderSide: BorderSide(color: Colors.blue, width: 1), // Border when focused
+                    )
                 ),
                 validator: (value) => value == null || value.isEmpty
                     ? "Please enter a connection name"
@@ -163,7 +206,19 @@ class _CreateConnectionScreenState extends State<CreateConnection> {
                 controller: _apiKeyController,
                 decoration: const InputDecoration(
                   labelText: "Api key",
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius:BorderRadius.all(Radius.circular(8)),
+                    borderSide: BorderSide(color: AppColors.primaryColor,
+                        style:BorderStyle.solid, width: 1),
+                  ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(8)),
+                      borderSide: BorderSide(color: AppColors.primaryColor, width: 1), // Default border color
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(8)),
+                      borderSide: BorderSide(color: Colors.blue, width: 1), // Border when focused
+                    )
                 ),
                 validator: (value) => value == null || value.isEmpty
                     ? "Please enter an API key"
@@ -173,10 +228,17 @@ class _CreateConnectionScreenState extends State<CreateConnection> {
             ],
           ),
         ),
+      )
+      ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _handleCreateConnection,
-        child: const Icon(Icons.check),
+        backgroundColor:Colors.transparent,
+        elevation: 0,
+        shape: const CircleBorder(
+          side: BorderSide(color: AppColors.primaryColor, width: 2), // Border color and width
+        ),
+        child: const Icon(Icons.check, color:AppColors.primaryColor),
       ),
       bottomNavigationBar: CommonFooter(
         currentIndex: _selectedIndex,

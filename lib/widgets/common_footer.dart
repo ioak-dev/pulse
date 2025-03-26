@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../utils/theme_notifier.dart';
+import '../styles/colors.dart';
 
 class CommonFooter extends StatelessWidget {
   final int currentIndex;
@@ -21,7 +22,7 @@ class CommonFooter extends StatelessWidget {
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final iconColor =
-        isSelected ? (isDark ? Colors.white : Colors.black87) : Colors.grey;
+        isSelected ? (isDark ? AppColors.primaryDarkerColor : AppColors.primaryDarkerColor) : AppColors.primaryDarkerColor;
 
     return Expanded(
       child: InkWell(
@@ -51,7 +52,7 @@ class CommonFooter extends StatelessWidget {
   Widget _buildThemeItem(BuildContext context) {
     final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final iconColor = isDark ? Colors.white : Colors.black87;
+    final iconColor = isDark ? AppColors.primaryDarkerColor : AppColors.primaryDarkerColor;
 
     return Expanded(
       child: InkWell(
@@ -77,7 +78,12 @@ class CommonFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BottomAppBar(
+    return Container(
+        decoration: const BoxDecoration(
+        border: Border(
+        top: BorderSide(color: Colors.grey, width: 1),
+    ),
+    ),
       child: Row(
         children: [
           _buildNavItem(
