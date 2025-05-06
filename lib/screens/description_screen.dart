@@ -4,6 +4,7 @@ import '../utils/network_helper.dart';
 import '../screens/module_detail_screen.dart';
 import '../screens/home_screen.dart';
 import '../widgets/common_footer.dart';
+import '../styles/colors.dart';
 
 class DescriptionScreen extends StatefulWidget {
   final String appName;
@@ -71,7 +72,28 @@ class _DescriptionScreenState extends State<DescriptionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.primaryDarkerColor), // Change icon and color
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
         title: const Text('Modules List'),
+        titleTextStyle: const TextStyle(
+            color: AppColors.primaryColor,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            fontFamily: "Roboto"
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(15),
+          child: Container(
+            color: Colors.grey,
+            height: 1,
+
+          ),
+        ),
+        centerTitle: true,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -99,45 +121,53 @@ class _DescriptionScreenState extends State<DescriptionScreen> {
                         ),
                       );
                     },
-                    child: Card(
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Padding(
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(color: Colors.grey, width: 0.5), // Bottom border
+                          ),
+                        ),
+                        child: Card(
+                          color: Colors.transparent,
+                          elevation: 0,
+                          shape: const RoundedRectangleBorder(
+                            side: BorderSide.none, // No extra borders
+                          ),
+                          child: Padding(
                             padding: const EdgeInsets.all(12.0),
                             child: Row(
                               children: [
-                                CircleAvatar(
-                                  radius: 25,
-                                  backgroundColor: Colors.red,
-                                  child: ClipOval(
-                                    child: SvgPicture.network(
-                                      logoDark,
-                                      width: 114,
-                                      height: 114,
-                                      placeholderBuilder: (context) =>
-                                          Container(
-                                        width: 114,
-                                        height: 114,
-                                        color: Colors.red[50],
-                                        child: const Icon(
-                                          Icons.error_outline,
-                                          color: Colors.red,
-                                          size: 50,
+
+                                SizedBox(
+                                  width: MediaQuery.of(context).size.width * 0.2,
+                                  child: CircleAvatar(
+                                    radius: 25,
+                                    backgroundColor: AppColors.primaryColor,
+                                    child: ClipOval(
+                                      child: SvgPicture.network(
+                                        logoDark,
+                                        width: 50,
+                                        height: 50,
+                                        placeholderBuilder: (context) => Container(
+                                          width: 50,
+                                          height: 50,
+                                          color: Colors.red[50],
+                                          child: const Icon(
+                                            Icons.error_outline,
+                                            color: Colors.red,
+                                            size: 25,
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
                                 ),
+
                                 const SizedBox(width: 12),
                                 Expanded(
+                                  flex: 6,
                                   child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         displayName,
@@ -146,23 +176,43 @@ class _DescriptionScreenState extends State<DescriptionScreen> {
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                                      const SizedBox(height: 15),
+                                      const SizedBox(height: 5),
                                       Text(
                                         description,
                                         style: const TextStyle(
                                           fontSize: 14,
                                           color: Colors.grey,
                                         ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ],
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 1,
+                                  child: IconButton(
+                                    icon: const Icon(Icons.arrow_forward_ios, color: AppColors.primaryColor),
+                                    onPressed: () =>
+                                    {
+                                    Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                    builder: (context) => ModuleDetailScreen(
+                                    moduleName: module['name'],
+                                    apiKey: apiKey,
+                                    ),
+                                    ),
+                                    ),
+                                    }, // Function on press
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        ],
-                      ),
-                    ),
+                        ),
+                      )
+
                   );
                 },
               ),
