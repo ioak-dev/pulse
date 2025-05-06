@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../network_helper.dart';
+import '../utils/network_helper.dart';
 import '../widgets/common_footer.dart';
+import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 class EntryFormScreen extends StatefulWidget {
   final Map<String, dynamic> schema;
@@ -26,7 +27,7 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
   bool _isSubmitting = false;
   var _selectedIndex = 0;
   final NetworkHelper _networkHelper =
-      NetworkHelper('https://api.ioak.io:8100/api/portal');
+      NetworkHelper('https://api.ioak.io:8100');
 
   void _onItemTapped(int index) {
     setState(() {
@@ -44,7 +45,7 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
   }
 
   void _initializeForm() {
-    final fields = Map<String, dynamic>.from(widget.schema['model']['fields'])
+    final fields = Map<String, dynamic>.from(widget.schema['domain']['fields'])
       ..remove('id');
     _formValues = {};
     fields.forEach((key, value) {
@@ -54,9 +55,9 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final fields = Map<String, dynamic>.from(widget.schema['model']['fields'])
+    final fields = Map<String, dynamic>.from(widget.schema['domain']['fields'])
       ..remove('id');
-    final options = widget.schema['model']['options'] as Map<String, dynamic>;
+    final options = widget.schema['domain']['options'] as Map<String, dynamic>;
 
     return Scaffold(
       appBar: AppBar(
@@ -157,18 +158,58 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
             border: const OutlineInputBorder(),
             hintText: 'Select $fieldName',
           ),
-          items: (options as List<dynamic>?)?.map((value) {
+          items: (options as List<dynamic>?)?.map((option) {
             return DropdownMenuItem(
-              value: value,
-              child: Text(value.toString()),
+              value: option['id'],
+              child: Text(option['name']),
             );
           }).toList(),
           validator: (value) =>
               value == null ? 'Please select an option' : null,
           onChanged: (value) => _formValues[fieldName] = value,
         );
+      case 'options_multi':
+        return MultiSelectChipField(
+          items: (options as List<dynamic>?)
+              ?.map((option) => MultiSelectItem(option['id'], option['name']))
+              .toList() ?? [],
+          initialValue: _formValues[fieldName] ?? [],
+          title: Text('Select $fieldName'),
+          headerColor: Colors.blue.withOpacity(0.5),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.blue),
+          ),
+          onTap: (values) => _formValues[fieldName] = values,
+        );
+      case 'date':
+        return TextFormField(
+          controller: TextEditingController(
+            text: _formValues[fieldName]?.toString(),
+          ),
+          readOnly: true,
+          decoration: InputDecoration(
+            hintText: 'Select $fieldName',
+            border: const OutlineInputBorder(),
+          ),
+          onTap: () async {
+            final selectedDate = await showDatePicker(
+              context: context,
+              initialDate: DateTime.now(),
+              firstDate: DateTime(2000),
+              lastDate: DateTime(2100),
+            );
+            if (selectedDate != null) {
+              setState(() {
+                _formValues[fieldName] =
+                    "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}";
+              });
+            }
+          },
+        );
+      case 'null':
+        return const SizedBox.shrink(); // No input field for null type
       default:
-        return Text('Unsupported field type: $type');
+        return const SizedBox.shrink(); // Ignore unsupported types
     }
   }
 
@@ -176,26 +217,68 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSubmitting = true);
     _formKey.currentState!.save();
+
+    // Ensure null type fields are explicitly set to "null" as a string
+    final fields = Map<String, dynamic>.from(widget.schema['domain']['fields']);
+    fields.forEach((key, value) {
+      if (value == 'null') {
+        _formValues[key] = "null"; // Ensure "null" is sent as a string
+      }
+    });
+
+    // Convert tagId to an array of strings if it exists
+    if (_formValues.containsKey('tagId') && _formValues['tagId'] is List) {
+      _formValues['tagId'] = (_formValues['tagId'] as List)
+          .map((tag) => tag.toString())
+          .toList();
+    }
+
+    // Debugging: Log the final payload
+    debugPrint('Final Payload: $_formValues');
+
     try {
       if (widget.editData == null) {
-        await _networkHelper.post(
-          widget.createUrl,
-          _formValues,
-          apiKey: widget.apiKey,
-        );
+        debugPrint('POST Request Payload: $_formValues');
+        try {
+          final response = await _networkHelper.post(
+            widget.createUrl,
+            _formValues,
+            apiKey: widget.apiKey, // Use apiKey
+          );
+          debugPrint('POST Response: ${response.toString()}');
+        } catch (e) {
+          debugPrint('POST Error: $e');
+        }
       } else {
-        final updateAction = widget.schema['action']?.firstWhere(
+        final updateAction = widget.schema['endpoints']?.firstWhere(
           (action) => action['type'] == 'UPDATE',
           orElse: () => null,
         );
         if (updateAction != null) {
-          final url =
-              updateAction['url'].replaceAll('{{id}}', widget.editData['id']);
-          await _networkHelper.put(url, _formValues, widget.apiKey);
+          final id = widget.editData?['_id'] ?? 'default-id'; // Use a default placeholder if id is null
+          if (id == 'default-id') {
+            debugPrint('Warning: editData["id"] is null. Using default placeholder ID.');
+          }
+
+          final url = updateAction['url'].replaceAll('{{id}}', id);
+          debugPrint('PUT Request URL: $url');
+          debugPrint('PUT Request Payload: $_formValues');
+          debugPrint('PUT API Key: ${widget.apiKey}'); // Log API key for debugging
+          try {
+            final response = await _networkHelper.put(
+              url,
+              _formValues,
+              widget.apiKey, // Use apiKey
+            );
+            debugPrint('PUT Response: $response');
+          } catch (e) {
+            debugPrint('PUT Error: $e');
+          }
         }
       }
       Navigator.pop(context, true);
     } catch (e) {
+      debugPrint('General Error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e')),
       );

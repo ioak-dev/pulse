@@ -7,7 +7,10 @@ import 'screens/description_screen.dart';
 import 'screens/module_detail_screen.dart';
 import 'screens/entry_form_screen.dart';
 
+String apiKey = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVzZXJfaWQiOiI2N2Y2N2JmNDc1Y2E1MzI4YWZmZGY0OTAiLCJnaXZlbl9uYW1lIjpudWxsLCJmYW1pbHlfbmFtZSI6Ikphcml3YWxhIiwibmFtZSI6Im51bGwgSmFyaXdhbGEiLCJuaWNrbmFtZSI6bnVsbCwiZW1haWwiOiJqb3JkYW5nYW1pbmc0NDhAZ21haWwuY29tIn0sInNwYWNlIjoiMTEiLCJpYXQiOjE3NDQ4MjA3ODEsImV4cCI6MTc3NjM1Njc4MX0.qu3AWOzCC5rq-hadjDjSslhytt-j49q7o10Be73k_C6HdaicODk0EtEwq4xxMNEt7P76ETg98xjfVu2VeYEWYuR0mKsLXO2LsarGcFM2f__oaNeDr83ZxKPwyufjPhXwwvN2uvuIDTvJFZrh9AfxjCPO0xqVUyFR4BQbzoyaV15qbEs1hptR-VMnKfBUvHsdK6mjXk1gTFlk9bGUFW3EU5YNQU4DOvBPwCn3KKtYtd5dCcTAhRR9lS1wzZvLHo-Tni-dBUPz2hMD1pb8l8Q8Jhy_dAOBTGx68iKTWUnzl0m0KMn0Kya5Hv2StC69RErC7Qri8gD7b4v3jObTtMuYuA'; // Global API key
+
 void main() {
+  // WidgetsFlutterBinding.ensureInitialized();
   runApp(
     ChangeNotifierProvider<ThemeNotifier>(
       create: (_) => ThemeNotifier(),
@@ -65,6 +68,7 @@ class PulseApp extends StatelessWidget {
                 connectionName: args['connectionName'],
                 connectionId: args['connectionId'],
                 logoDark: args['logoDark'],
+                apiKey: apiKey,
               ),
             );
           case '/moduleDetail':
@@ -72,7 +76,7 @@ class PulseApp extends StatelessWidget {
             return MaterialPageRoute(
               builder: (context) => ModuleDetailScreen(
                 moduleName: args['moduleName'],
-                apiKey: args['apiKey'],
+                apiKey: apiKey,
               ),
             );
           case '/entryForm':
@@ -80,7 +84,7 @@ class PulseApp extends StatelessWidget {
             return MaterialPageRoute(
               builder: (context) => EntryFormScreen(
                 schema: args['schema'],
-                apiKey: args['apiKey'],
+                apiKey: apiKey,
                 createUrl: args['createUrl'],
                 editData: args['editData'],
               ),

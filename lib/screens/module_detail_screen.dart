@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../network_helper.dart';
+import '../utils/network_helper.dart';
 import '../widgets/common_footer.dart';
+import 'entry_form_screen.dart';
 
 class ModuleDetailScreen extends StatefulWidget {
   final String moduleName;
@@ -24,6 +25,11 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
   var _selectedIndex = 0;
   final NetworkHelper _networkHelper =
       NetworkHelper('https://api.ioak.io:8100/api/portal');
+  final NetworkHelper _networkHelperLng =
+      NetworkHelper('https://api.ioak.io:8100');
+
+  Map<String, String> _categoryMap = {};
+  Map<String, String> _tagMap = {};
 
   void _onItemTapped(int index) {
     setState(() {
@@ -37,6 +43,9 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
   @override
   void initState() {
     super.initState();
+    setState(() {
+      _isLoading = true;
+    });
     _loadModuleData();
   }
 
@@ -44,24 +53,35 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
     try {
       final schemaResponse = await _networkHelper.get(
         '/schema/module/${widget.moduleName}',
-        widget.apiKey,
+        widget.apiKey, // Use apiKey
       );
 
       if (schemaResponse == null) throw Exception('Failed to load schema');
 
       setState(() {
         _schema = schemaResponse;
+
+        // Extract category and tagId mappings
+        final categoryOptions =
+            _schema['domain']?['options']?['category'] ?? [];
+        final tagOptions = _schema['domain']?['options']?['tagId'] ?? [];
+
+        _categoryMap = {
+          for (var option in categoryOptions) option['id']: option['name']
+        };
+
+        _tagMap = {for (var option in tagOptions) option['id']: option['name']};
       });
 
-      final listAction = _schema['action']?.firstWhere(
+      final listAction = _schema['endpoints']?.firstWhere(
         (action) => action['type'] == 'LIST',
         orElse: () => null,
       );
 
       if (listAction != null) {
-        final listResponse = await _networkHelper.get(
+        final listResponse = await _networkHelperLng.get(
           listAction['url'],
-          widget.apiKey,
+          widget.apiKey, // Use apiKey
         );
 
         setState(() {
@@ -113,33 +133,52 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
   }
 
   List<DataColumn> _buildDataColumns() {
-    final fields = Map<String, dynamic>.from(_schema['model']['fields'])
-      ..remove('id');
-    return fields.keys.map<DataColumn>((fieldName) {
-      return DataColumn(label: Text(fieldName));
-    }).toList()
-      ..add(const DataColumn(label: Text('Actions')));
+    return [
+      const DataColumn(label: Text('Name')),
+      const DataColumn(label: Text('Tag')),
+      const DataColumn(label: Text('Category')),
+      const DataColumn(label: Text('Price')),
+      const DataColumn(label: Text('Date')),
+      const DataColumn(label: Text('Actions')),
+    ];
   }
 
   List<DataRow> _buildDataRows() {
     return _listData.map<DataRow>((item) {
-      final fields = Map<String, dynamic>.from(_schema['model']['fields'])
-        ..remove('id');
+      final cells = [
+        // Name (description field)
+        DataCell(Text(item['description'] ?? '')),
 
-      final cells = fields.keys.map<DataCell>((fieldName) {
-        return DataCell(Text(item[fieldName]?.toString() ?? ''));
-      }).toList();
+        // Tag (mapped from tagId)
+        DataCell(Text(
+          (item['tagId'] as List<dynamic>?)
+                  ?.map((tagId) => _tagMap[tagId] ?? tagId.toString())
+                  .join(', ') ??
+              '',
+        )),
 
-      cells.add(DataCell(
-        PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert),
-          onSelected: (value) => _handleAction(value, item),
-          itemBuilder: (context) => [
-            const PopupMenuItem(value: 'edit', child: Text('Edit')),
-            const PopupMenuItem(value: 'delete', child: Text('Delete')),
-          ],
+        // Category (mapped from category)
+        DataCell(
+            Text(_categoryMap[item['category']] ?? item['category'] ?? '')),
+
+        // Price (amount field)
+        DataCell(Text(item['amount']?.toString() ?? '')),
+
+        // Date (billDate field)
+        DataCell(Text(item['billDate'] ?? '')),
+
+        // Actions (edit and delete)
+        DataCell(
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) => _handleAction(value, item),
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'edit', child: Text('Edit')),
+              const PopupMenuItem(value: 'delete', child: Text('Delete')),
+            ],
+          ),
         ),
-      ));
+      ];
 
       return DataRow(cells: cells);
     }).toList();
@@ -147,25 +186,36 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
 
   void _handleAction(String action, dynamic item) async {
     if (action == 'edit') {
-      _navigateToEntryForm(context, item);
+      _navigateToEntryForm(context, item); // Pass item for editing
     } else if (action == 'delete') {
-      await _deleteItem(item['id']);
+      await _deleteItem(item['_id']);
     }
   }
 
   Future<void> _deleteItem(String id) async {
     try {
-      final deleteAction = _schema['action']?.firstWhere(
+      final deleteAction = _schema['endpoints']?.firstWhere(
         (action) => action['type'] == 'DELETE',
         orElse: () => null,
       );
 
       if (deleteAction != null) {
         final url = deleteAction['url'].replaceAll('{{id}}', id);
-        await _networkHelper.delete(url, {'apiKey': widget.apiKey});
+
+        // Debugging: Log the URL to verify correctness
+        debugPrint('DELETE Request URL: $url');
+
+        await _networkHelperLng.delete(
+          url,
+          widget.apiKey, // Use apiKey
+        );
         _loadModuleData();
+      } else {
+        throw Exception('DELETE action not found in schema');
       }
     } catch (e) {
+      debugPrint(
+          'Error during DELETE request: $e'); // Log the error for debugging
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Delete failed: $e')),
       );
@@ -173,22 +223,52 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
   }
 
   void _navigateToEntryForm(BuildContext context, dynamic item) {
-    final createAction = _schema['action']?.firstWhere(
+    if (_schema == null || _schema['endpoints'] == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Schema not loaded yet!')),
+      );
+      return;
+    }
+
+    final createAction = _schema['endpoints']?.firstWhere(
       (action) => action['type'] == 'CREATE',
       orElse: () => null,
     );
 
     if (createAction != null) {
-      Navigator.pushNamed(
-        context,
-        '/entryForm',
-        arguments: {
-          'schema': _schema,
-          'apiKey': widget.apiKey,
-          'createUrl': createAction['url'],
-          'editData': item,
-        },
-      ).then((_) => _loadModuleData());
+      try {
+        Navigator.of(context)
+            .push(
+          MaterialPageRoute(
+            builder: (context) => EntryFormScreen(
+              schema: _schema,
+              apiKey: widget.apiKey, // Use apiKey
+              createUrl: createAction['url'],
+              editData: item,
+            ),
+          ),
+        )
+            .then((_) {
+          debugPrint("Returned from EntryFormScreen, reloading data...");
+          _loadModuleData();
+        }).catchError((error, stackTrace) {
+          debugPrint("Error navigating to EntryFormScreen: $error");
+          debugPrint("StackTrace: $stackTrace");
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Navigation Error: $error')),
+          );
+        });
+      } catch (error, stackTrace) {
+        debugPrint("Caught error during navigation: $error");
+        debugPrint("StackTrace: $stackTrace");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Unexpected Error: $error')),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Create action not found!')),
+      );
     }
   }
 }

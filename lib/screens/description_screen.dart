@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../network_helper.dart';
+import '../utils/network_helper.dart';
 import '../screens/module_detail_screen.dart';
 import '../screens/home_screen.dart';
 import '../widgets/common_footer.dart';
@@ -10,6 +10,7 @@ class DescriptionScreen extends StatefulWidget {
   final String connectionName;
   final int connectionId;
   final String logoDark;
+  final String apiKey;
 
   const DescriptionScreen({
     super.key,
@@ -17,6 +18,7 @@ class DescriptionScreen extends StatefulWidget {
     required this.connectionName,
     required this.connectionId,
     required this.logoDark,
+    required this.apiKey,
   });
 
   @override
@@ -35,7 +37,7 @@ class _DescriptionScreenState extends State<DescriptionScreen> {
   void initState() {
     super.initState();
     apiKey = _apiKeyController.text;
-    fetchModules(apiKey);
+    fetchModules(widget.apiKey);
   }
 
   void _onItemTapped(int index) {
@@ -92,7 +94,7 @@ class _DescriptionScreenState extends State<DescriptionScreen> {
                         MaterialPageRoute(
                           builder: (context) => ModuleDetailScreen(
                             moduleName: module['name'],
-                            apiKey: apiKey,
+                            apiKey: widget.apiKey,
                           ),
                         ),
                       );

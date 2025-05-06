@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../model/item.dart';
-import '../db_helper.dart';
-import '../network_helper.dart';
+import '../utils/db_helper.dart';
+import '../utils/network_helper.dart';
 import 'home_screen.dart';
 import 'description_screen.dart';
 import '../widgets/common_footer.dart';
