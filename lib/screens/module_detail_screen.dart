@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../utils/network_helper.dart';
 import '../widgets/common_footer.dart';
 import 'entry_form_screen.dart';
+import '../styles/colors.dart';
 
 class ModuleDetailScreen extends StatefulWidget {
   final String moduleName;
@@ -101,15 +102,30 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.moduleName),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => _navigateToEntryForm(context, null),
+        title: Text(
+          widget.moduleName.toUpperCase(), // Capitalized header
+          style: const TextStyle(
+            color: AppColors.primaryColor,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            fontFamily: "Roboto"
           ),
-        ],
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 1,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
       ),
       body: _buildBody(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _navigateToEntryForm(context, null),
+        child: const Icon(Icons.add),
+      ),
       bottomNavigationBar: CommonFooter(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
@@ -119,107 +135,99 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
 
   Widget _buildBody() {
     if (_isLoading) return const Center(child: CircularProgressIndicator());
-    if (_errorMessage != null)
-      return Center(child: Text('Error: $_errorMessage'));
+    if (_errorMessage != null) return Center(child: Text('Error: $_errorMessage'));
     if (_listData.isEmpty) return const Center(child: Text('No records found'));
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        columns: _buildDataColumns(),
-        rows: _buildDataRows(),
-      ),
+    final groupedData = _groupDataByDate();
+
+    return ListView.builder(
+      itemCount: groupedData.length,
+      itemBuilder: (context, index) {
+        final date = groupedData.keys.elementAt(index);
+        final items = groupedData[date]!;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Text(
+                date,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey),
+              ),
+            ),
+            ...items.map((item) => _buildListItem(item)).toList(),
+          ],
+        );
+      },
     );
   }
 
-  List<DataColumn> _buildDataColumns() {
-    return [
-      const DataColumn(label: Text('Name')),
-      const DataColumn(label: Text('Tag')),
-      const DataColumn(label: Text('Category')),
-      const DataColumn(label: Text('Price')),
-      const DataColumn(label: Text('Date')),
-      const DataColumn(label: Text('Actions')),
-    ];
-  }
-
-  List<DataRow> _buildDataRows() {
-    return _listData.map<DataRow>((item) {
-      final cells = [
-        // Name (description field)
-        DataCell(Text(item['description'] ?? '')),
-
-        // Tag (mapped from tagId)
-        DataCell(Text(
-          (item['tagId'] as List<dynamic>?)
-                  ?.map((tagId) => _tagMap[tagId] ?? tagId.toString())
-                  .join(', ') ??
-              '',
-        )),
-
-        // Category (mapped from category)
-        DataCell(
-            Text(_categoryMap[item['category']] ?? item['category'] ?? '')),
-
-        // Price (amount field)
-        DataCell(Text(item['amount']?.toString() ?? '')),
-
-        // Date (billDate field)
-        DataCell(Text(item['billDate'] ?? '')),
-
-        // Actions (edit and delete)
-        DataCell(
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) => _handleAction(value, item),
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'edit', child: Text('Edit')),
-              const PopupMenuItem(value: 'delete', child: Text('Delete')),
-            ],
-          ),
-        ),
-      ];
-
-      return DataRow(cells: cells);
-    }).toList();
-  }
-
-  void _handleAction(String action, dynamic item) async {
-    if (action == 'edit') {
-      _navigateToEntryForm(context, item); // Pass item for editing
-    } else if (action == 'delete') {
-      await _deleteItem(item['_id']);
-    }
-  }
-
-  Future<void> _deleteItem(String id) async {
-    try {
-      final deleteAction = _schema['endpoints']?.firstWhere(
-        (action) => action['type'] == 'DELETE',
-        orElse: () => null,
-      );
-
-      if (deleteAction != null) {
-        final url = deleteAction['url'].replaceAll('{{id}}', id);
-
-        // Debugging: Log the URL to verify correctness
-        debugPrint('DELETE Request URL: $url');
-
-        await _networkHelperLng.delete(
-          url,
-          widget.apiKey, // Use apiKey
-        );
-        _loadModuleData();
-      } else {
-        throw Exception('DELETE action not found in schema');
+  Map<String, List<dynamic>> _groupDataByDate() {
+    final Map<String, List<dynamic>> groupedData = {};
+    for (var item in _listData) {
+      final date = item['billDate'] ?? 'Unknown Date';
+      if (!groupedData.containsKey(date)) {
+        groupedData[date] = [];
       }
-    } catch (e) {
-      debugPrint(
-          'Error during DELETE request: $e'); // Log the error for debugging
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Delete failed: $e')),
-      );
+      groupedData[date]!.add(item);
     }
+    return groupedData;
+  }
+
+  Widget _buildListItem(dynamic item) {
+    return GestureDetector(
+      onTap: () => _navigateToEntryForm(context, item),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        padding: const EdgeInsets.all(16.0),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(12.0),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.2),
+              spreadRadius: 2,
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item['description'] ?? 'No Description',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    item['billDate'] ?? 'Unknown Date',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              '₹${item['amount']?.toString() ?? 'N/A'}',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: Colors.blue,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _navigateToEntryForm(BuildContext context, dynamic item) {

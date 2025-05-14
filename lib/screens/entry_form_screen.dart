@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../utils/network_helper.dart';
 import '../widgets/common_footer.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
+import '../styles/colors.dart';
 
 class EntryFormScreen extends StatefulWidget {
   final Map<String, dynamic> schema;
@@ -61,23 +62,49 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.editData == null ? 'New Entry' : 'Edit Entry'),
+        title: Text(
+          widget.editData == null
+              ? 'NEW ENTRY'
+              : 'EDIT ENTRY', // Capitalized header
+          style: const TextStyle(
+              color: AppColors.primaryColor,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              fontFamily: "Roboto"),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 1,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              ...fields.entries.map((entry) {
-                return _buildFormField(
-                  fieldName: entry.key,
-                  fieldType: entry.value,
-                  options: options[entry.key],
-                );
-              }),
-              const SizedBox(height: 20),
-            ],
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                ...fields.entries.map((entry) {
+                  return _buildFormField(
+                    fieldName: entry.key,
+                    fieldType: entry.value,
+                    options: options[entry.key],
+                  );
+                }),
+                const SizedBox(height: 20),
+                if (widget.editData != null)
+                  ElevatedButton(
+                    onPressed: _deleteEntry,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                    ),
+                    child: const Text('Delete',
+                        style: TextStyle(color: Colors.white)),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -98,15 +125,18 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
     dynamic options,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             fieldName,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           _getInputField(fieldType, fieldName, options),
         ],
       ),
@@ -118,9 +148,20 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
       case 'text':
         return TextFormField(
           initialValue: _formValues[fieldName]?.toString(),
-          decoration: InputDecoration(
-            hintText: 'Enter $fieldName',
-            border: const OutlineInputBorder(),
+          decoration: const InputDecoration(
+            labelText: "Enter text",
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+              borderSide: BorderSide(color: AppColors.primaryColor, width: 1),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+              borderSide: BorderSide(color: AppColors.primaryColor, width: 1),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+              borderSide: BorderSide(color: Colors.blue, width: 1),
+            ),
           ),
           validator: (value) =>
               value?.isEmpty ?? true ? 'Required field' : null,
@@ -130,9 +171,20 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
         return TextFormField(
           initialValue: _formValues[fieldName]?.toString(),
           maxLines: 4,
-          decoration: InputDecoration(
-            hintText: 'Enter $fieldName',
-            border: const OutlineInputBorder(),
+          decoration: const InputDecoration(
+            labelText: "Enter text",
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+              borderSide: BorderSide(color: AppColors.primaryColor, width: 1),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+              borderSide: BorderSide(color: AppColors.primaryColor, width: 1),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+              borderSide: BorderSide(color: Colors.blue, width: 1),
+            ),
           ),
           validator: (value) =>
               value?.isEmpty ?? true ? 'Required field' : null,
@@ -142,9 +194,20 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
         return TextFormField(
           initialValue: _formValues[fieldName]?.toString(),
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(
-            hintText: 'Enter $fieldName',
-            border: const OutlineInputBorder(),
+          decoration: const InputDecoration(
+            labelText: "Enter number",
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+              borderSide: BorderSide(color: AppColors.primaryColor, width: 1),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+              borderSide: BorderSide(color: AppColors.primaryColor, width: 1),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+              borderSide: BorderSide(color: Colors.blue, width: 1),
+            ),
           ),
           validator: (value) =>
               value?.isEmpty ?? true ? 'Required field' : null,
@@ -154,9 +217,20 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
       case 'options':
         return DropdownButtonFormField(
           value: _formValues[fieldName],
-          decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            hintText: 'Select $fieldName',
+          decoration: const InputDecoration(
+            labelText: "Select option",
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+              borderSide: BorderSide(color: AppColors.primaryColor, width: 1),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+              borderSide: BorderSide(color: AppColors.primaryColor, width: 1),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+              borderSide: BorderSide(color: Colors.blue, width: 1),
+            ),
           ),
           items: (options as List<dynamic>?)?.map((option) {
             return DropdownMenuItem(
@@ -170,14 +244,15 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
         );
       case 'options_multi':
         return MultiSelectChipField(
-          items: (options as List<dynamic>?)
-              ?.map((option) => MultiSelectItem(option['id'], option['name']))
-              .toList() ?? [],
+          items: (options as List<dynamic>? ?? [])
+              .map((option) => MultiSelectItem(option['id'], option['name']))
+              .toList(),
           initialValue: _formValues[fieldName] ?? [],
           title: Text('Select $fieldName'),
           headerColor: Colors.blue.withOpacity(0.5),
           decoration: BoxDecoration(
             border: Border.all(color: Colors.blue),
+            borderRadius: BorderRadius.circular(8.0),
           ),
           onTap: (values) => _formValues[fieldName] = values,
         );
@@ -187,9 +262,20 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
             text: _formValues[fieldName]?.toString(),
           ),
           readOnly: true,
-          decoration: InputDecoration(
-            hintText: 'Select $fieldName',
-            border: const OutlineInputBorder(),
+          decoration: const InputDecoration(
+            labelText: "Select date",
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+              borderSide: BorderSide(color: AppColors.primaryColor, width: 1),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+              borderSide: BorderSide(color: AppColors.primaryColor, width: 1),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+              borderSide: BorderSide(color: Colors.blue, width: 1),
+            ),
           ),
           onTap: () async {
             final selectedDate = await showDatePicker(
@@ -228,9 +314,8 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
 
     // Convert tagId to an array of strings if it exists
     if (_formValues.containsKey('tagId') && _formValues['tagId'] is List) {
-      _formValues['tagId'] = (_formValues['tagId'] as List)
-          .map((tag) => tag.toString())
-          .toList();
+      _formValues['tagId'] =
+          (_formValues['tagId'] as List).map((tag) => tag.toString()).toList();
     }
 
     // Debugging: Log the final payload
@@ -255,15 +340,18 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
           orElse: () => null,
         );
         if (updateAction != null) {
-          final id = widget.editData?['_id'] ?? 'default-id'; // Use a default placeholder if id is null
+          final id = widget.editData?['_id'] ??
+              'default-id'; // Use a default placeholder if id is null
           if (id == 'default-id') {
-            debugPrint('Warning: editData["id"] is null. Using default placeholder ID.');
+            debugPrint(
+                'Warning: editData["id"] is null. Using default placeholder ID.');
           }
 
           final url = updateAction['url'].replaceAll('{{id}}', id);
           debugPrint('PUT Request URL: $url');
           debugPrint('PUT Request Payload: $_formValues');
-          debugPrint('PUT API Key: ${widget.apiKey}'); // Log API key for debugging
+          debugPrint(
+              'PUT API Key: ${widget.apiKey}'); // Log API key for debugging
           try {
             final response = await _networkHelper.put(
               url,
@@ -284,6 +372,31 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
       );
     } finally {
       setState(() => _isSubmitting = false);
+    }
+  }
+
+  Future<void> _deleteEntry() async {
+    final deleteAction = widget.schema['endpoints']?.firstWhere(
+      (action) => action['type'] == 'DELETE',
+      orElse: () => null,
+    );
+
+    if (deleteAction != null) {
+      final id = widget.editData?['_id'] ?? 'default-id';
+      final url = deleteAction['url'].replaceAll('{{id}}', id);
+
+      try {
+        await _networkHelper.delete(url, widget.apiKey);
+        Navigator.pop(context, true); // Navigate back to module details screen
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting entry: $e')),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Delete action not found!')),
+      );
     }
   }
 }
