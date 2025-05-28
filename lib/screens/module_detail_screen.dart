@@ -51,6 +51,7 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
   }
 
   Future<void> _loadModuleData() async {
+    setState(() => _isLoading = true);
     try {
       final schemaResponse = await _networkHelper.get(
         '/schema/module/${widget.moduleName}',
@@ -87,14 +88,27 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
 
         setState(() {
           _listData = List<dynamic>.from(listResponse ?? []);
-          _isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();
-        _isLoading = false;
       });
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  String _formatDate(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return '';
+    try {
+      final parts = dateStr.split('-');
+      if (parts.length == 3) {
+        return '${parts[2]}-${parts[1]}-${parts[0]}';
+      }
+      return dateStr;
+    } catch (_) {
+      return dateStr;
     }
   }
 
@@ -102,8 +116,14 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.primaryColor),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
         title: Text(
-          widget.moduleName.toUpperCase(), // Capitalized header
+          widget.moduleName.toUpperCase(),
           style: const TextStyle(
             color: AppColors.primaryColor,
             fontSize: 24,
@@ -114,17 +134,27 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 1,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
       ),
-      body: _buildBody(),
+      body: Stack(
+        children: [
+          _buildBody(),
+          if (_isLoading)
+            Container(
+              color: Colors.black.withOpacity(0.5), // Semi-transparent overlay
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _navigateToEntryForm(context, null),
-        child: const Icon(Icons.add),
+        backgroundColor:Colors.transparent,
+        elevation: 0,
+        shape: const CircleBorder(
+          side: BorderSide(color: AppColors.primaryColor, width: 2), // Border color and width
+        ),
+        child: const Icon(Icons.add, color:AppColors.primaryColor),
       ),
       bottomNavigationBar: CommonFooter(
         currentIndex: _selectedIndex,
@@ -166,7 +196,16 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
   Map<String, List<dynamic>> _groupDataByDate() {
     final Map<String, List<dynamic>> groupedData = {};
     for (var item in _listData) {
-      final date = item['billDate'] ?? 'Unknown Date';
+      final rawDate = item['billDate'] ?? 'Unknown Date';
+      String date = rawDate;
+      try {
+        final parts = rawDate.split('-');
+        if (parts.length == 3) {
+          date = '${parts[2]}-${parts[1]}-${parts[0]}';
+        }
+      } catch (_) {
+        date = rawDate;
+      }
       if (!groupedData.containsKey(date)) {
         groupedData[date] = [];
       }
@@ -209,7 +248,7 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    item['billDate'] ?? 'Unknown Date',
+                    _formatDate(item['billDate']?.toString()),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Colors.grey,
                     ),

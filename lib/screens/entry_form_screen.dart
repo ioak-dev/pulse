@@ -26,6 +26,7 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
   final _formKey = GlobalKey<FormState>();
   late Map<String, dynamic> _formValues;
   bool _isSubmitting = false;
+  bool _isLoading = false;
   var _selectedIndex = 0;
   final NetworkHelper _networkHelper =
       NetworkHelper('https://api.ioak.io:8100');
@@ -54,76 +55,143 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
     });
   }
 
+  String _formatDate(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return '';
+    try {
+      final parts = dateStr.split('-');
+      if (parts.length == 3) {
+        return '${parts[2]}-${parts[1]}-${parts[0]}';
+      }
+      return dateStr;
+    } catch (_) {
+      return dateStr;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final fields = Map<String, dynamic>.from(widget.schema['domain']['fields'])
-      ..remove('id');
-    final options = widget.schema['domain']['options'] as Map<String, dynamic>;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          widget.editData == null
-              ? 'NEW ENTRY'
-              : 'EDIT ENTRY', // Capitalized header
-          style: const TextStyle(
-              color: AppColors.primaryColor,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              fontFamily: "Roboto"),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 1,
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                ...fields.entries.map((entry) {
-                  return _buildFormField(
-                    fieldName: entry.key,
-                    fieldType: entry.value,
-                    options: options[entry.key],
-                  );
-                }),
-                const SizedBox(height: 20),
-                if (widget.editData != null)
-                  ElevatedButton(
-                    onPressed: _deleteEntry,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8.0),
-                      ),
-                    ),
-                    child: const Text('Delete',
-                        style: TextStyle(color: Colors.white)),
-                  ),
-              ],
+    return Stack(
+      children: [
+        Scaffold(
+          appBar: AppBar(
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                  color: AppColors.primaryColor),
+              onPressed: () {
+                Navigator.pop(context);
+              },
             ),
+            title: Text(
+              (widget.editData == null ? 'New Entry' : 'Edit Entry')
+                  .toUpperCase(),
+              style: const TextStyle(
+                  color: AppColors.primaryColor,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: "Roboto"),
+            ),
+            centerTitle: true,
+            backgroundColor: Colors.white,
+            elevation: 1,
+          ),
+          body: Stack(
+            children: [
+              SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        ...Map<String, dynamic>.from(
+                                widget.schema['domain']['fields'])
+                            .entries
+                            .where((entry) =>
+                                entry.key.toLowerCase() != 'id' &&
+                                (widget.editData == null ||
+                                    (widget.editData?[entry.key]
+                                            ?.toString()
+                                            .isNotEmpty ??
+                                        false)))
+                            .map((entry) {
+                          final fieldName = entry.key;
+                          final fieldType = entry.value;
+                          final options =
+                              widget.schema['domain']['options'][fieldName];
+
+                          return _buildDynamicField(
+                            fieldName: fieldName,
+                            fieldType: fieldType,
+                            options: options,
+                          );
+                        }),
+                        const SizedBox(height: 20),
+                        if (widget.editData != null)
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _deleteEntry,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8.0),
+                                ),
+                              ),
+                              child: const Text('Delete',
+                                  style: TextStyle(color: Colors.white)),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              if (_isSubmitting)
+                Container(
+                  color: Colors.black
+                      .withOpacity(0.25), // Semi-transparent overlay
+                  child: const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+            ],
+          ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: _submitForm,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            shape: const CircleBorder(
+              side: BorderSide(
+                  color: AppColors.primaryColor,
+                  width: 2),
+            ),
+            child: const Icon(Icons.check, color: AppColors.primaryColor),
+          ),
+          bottomNavigationBar: CommonFooter(
+            currentIndex: _selectedIndex,
+            onTap: _onItemTapped,
           ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _submitForm,
-        child: const Icon(Icons.check),
-      ),
-      bottomNavigationBar: CommonFooter(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-      ),
+        if (_isLoading)
+          Container(
+            color: Colors.black.withOpacity(0.5), // Semi-transparent overlay
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          ),
+      ],
     );
   }
 
-  Widget _buildFormField({
+  Widget _buildDynamicField({
     required String fieldName,
     required String fieldType,
     dynamic options,
   }) {
+    if (fieldType == 'null' || fieldName.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: Column(
@@ -259,7 +327,7 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
       case 'date':
         return TextFormField(
           controller: TextEditingController(
-            text: _formValues[fieldName]?.toString(),
+            text: _formatDate(_formValues[fieldName]?.toString()),
           ),
           readOnly: true,
           decoration: const InputDecoration(
@@ -376,6 +444,7 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
   }
 
   Future<void> _deleteEntry() async {
+    setState(() => _isSubmitting = true);
     final deleteAction = widget.schema['endpoints']?.firstWhere(
       (action) => action['type'] == 'DELETE',
       orElse: () => null,
@@ -398,5 +467,6 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
         const SnackBar(content: Text('Delete action not found!')),
       );
     }
+    setState(() => _isSubmitting = false);
   }
 }
