@@ -127,19 +127,24 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
                         }),
                         const SizedBox(height: 20),
                         if (widget.editData != null)
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: _deleteEntry,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8.0),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: 180, // Reduced width
+                                child: ElevatedButton(
+                                  onPressed: _deleteEntry,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8.0),
+                                    ),
+                                  ),
+                                  child: const Text('Delete',
+                                      style: TextStyle(color: Colors.white)),
                                 ),
                               ),
-                              child: const Text('Delete',
-                                  style: TextStyle(color: Colors.white)),
-                            ),
+                            ],
                           ),
                       ],
                     ),
@@ -149,7 +154,7 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
               if (_isSubmitting)
                 Container(
                   color: Colors.black
-                      .withOpacity(0.25), // Semi-transparent overlay
+                      .withOpacity(0.2), // Semi-transparent overlay
                   child: const Center(
                     child: CircularProgressIndicator(),
                   ),
@@ -174,7 +179,7 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
         ),
         if (_isLoading)
           Container(
-            color: Colors.black.withOpacity(0.5), // Semi-transparent overlay
+            color: Colors.black.withOpacity(0.2), // Semi-transparent overlay
             child: const Center(
               child: CircularProgressIndicator(),
             ),

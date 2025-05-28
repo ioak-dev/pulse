@@ -140,7 +140,7 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
           _buildBody(),
           if (_isLoading)
             Container(
-              color: Colors.black.withOpacity(0.5), // Semi-transparent overlay
+              color: Colors.black.withOpacity(0.2), // Semi-transparent overlay
               child: const Center(
                 child: CircularProgressIndicator(),
               ),
