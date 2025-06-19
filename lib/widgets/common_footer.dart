@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../utils/theme_notifier.dart';
 import '../styles/colors.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class CommonFooter extends StatelessWidget {
   final int currentIndex;
@@ -13,6 +14,121 @@ class CommonFooter extends StatelessWidget {
     required this.onTap,
   }) : super(key: key);
 
+  void _showPopup(BuildContext context) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: "Dismiss",
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (_, __, ___) {
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+        return Align(
+          alignment: Alignment.bottomCenter,
+          child: Material(
+            color: Colors.transparent,
+            child: Theme(
+              data: Theme.of(context),
+              child: Container(
+                width: MediaQuery.of(context).size.width,
+                height: 300,
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black26, blurRadius: 10),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // const Text("Settings",
+                    //     style: TextStyle(
+                    //         fontSize: 20,
+                    //         fontWeight: FontWeight.bold,
+                    //         color: AppColors.primaryColor)),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Create Connection',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Icon(Icons.add_circle_outline,
+                          color: Colors.blueAccent, size: 28),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+      transitionBuilder: (context, anim1, anim2, child) {
+        return SlideTransition(
+          position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+              .animate(anim1),
+          child: child,
+        );
+      },
+    );
+  }
+
+  void _createConnection(context) {
+    Navigator.pushNamed(context, '/createConnection');
+  }
+
+  void _showCreateConnectionPopup(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      backgroundColor: Colors.white,
+      builder: (context) {
+        return SafeArea(
+          child: SizedBox(
+            height: 200,
+            child: Center( // Center horizontally
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center, // Center vertically
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                      _createConnection(context);
+                    },
+                    child: const Column(
+                      children: [
+                        Icon(Icons.add_circle_outline,
+                            size: 36, color: Colors.blueAccent),
+                        SizedBox(height: 12),
+                        Text(
+                          'Create Connection',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+
   Widget _buildNavItem({
     required BuildContext context,
     required IconData icon,
@@ -21,8 +137,9 @@ class CommonFooter extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final iconColor =
-        isSelected ? (isDark ? AppColors.primaryDarkerColor : AppColors.primaryDarkerColor) : AppColors.primaryDarkerColor;
+    final iconColor = isSelected
+        ? (isDark ? Colors.black87 : Colors.black87)
+        : Colors.black87;
 
     return Expanded(
       child: InkWell(
@@ -35,13 +152,13 @@ class CommonFooter extends StatelessWidget {
             children: [
               Icon(icon, color: iconColor),
               const SizedBox(height: 2),
-              Text(
-                label,
-                style: TextStyle(
-                  color: iconColor,
-                  fontSize: 12,
-                ),
-              ),
+              // Text(
+              //   label,
+              //   style: TextStyle(
+              //     color: iconColor,
+              //     fontSize: 18,
+              //   ),
+              // ),
             ],
           ),
         ),
@@ -52,7 +169,7 @@ class CommonFooter extends StatelessWidget {
   Widget _buildThemeItem(BuildContext context) {
     final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final iconColor = isDark ? AppColors.primaryDarkerColor : AppColors.primaryDarkerColor;
+    final iconColor = isDark ? Colors.black87 : Colors.black87;
 
     return Expanded(
       child: InkWell(
@@ -79,28 +196,30 @@ class CommonFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-        decoration: const BoxDecoration(
+      decoration: const BoxDecoration(
         border: Border(
-        top: BorderSide(color: Colors.grey, width: 1),
-    ),
-    ),
+          top: BorderSide(color: Colors.grey, width: 1),
+        ),
+      ),
       child: Row(
         children: [
           _buildNavItem(
             context: context,
-            icon: Icons.home,
-            label: 'Home',
+            icon: FontAwesomeIcons.house,
+            label: '',
             isSelected: currentIndex == 0,
             onTap: () => onTap(0),
           ),
           _buildNavItem(
             context: context,
-            icon: Icons.settings,
-            label: 'Settings',
+            icon: FontAwesomeIcons.gear,
+            label: '',
             isSelected: currentIndex == 1,
-            onTap: () => onTap(1),
+            onTap: () =>
+                // onTap(0),
+                // _showPopup(context),
+            _showCreateConnectionPopup(context),
           ),
-          _buildThemeItem(context),
         ],
       ),
     );

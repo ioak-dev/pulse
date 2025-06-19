@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../model/item.dart';
 import '../utils/db_helper.dart';
 import '../utils/network_helper.dart';
@@ -81,6 +82,7 @@ class _CreateConnectionScreenState extends State<CreateConnection> {
               'connectionName': item.connectionName,
               'connectionId': item.id ?? 0,
               'logoDark': item.logoDark,
+              'logoLight': item.logoLight,
             },
           );
         } else {
@@ -121,7 +123,7 @@ class _CreateConnectionScreenState extends State<CreateConnection> {
         title: const Text("Create Connection"),
         automaticallyImplyLeading: false,
         titleTextStyle: const TextStyle(
-          color: AppColors.primaryColor,
+          color:Colors.black87,
           fontSize: 24,
           fontWeight: FontWeight.bold,
           fontFamily: "Roboto"
@@ -225,20 +227,24 @@ class _CreateConnectionScreenState extends State<CreateConnection> {
                     : null,
               ),
               const SizedBox(height: 50),
+              ElevatedButton(
+                onPressed: _handleCreateConnection,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                ),
+                child: const Text('Create',
+                    style: TextStyle(color: Colors.white,fontSize: 18)),
+              ),
             ],
           ),
         ),
       )
       ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _handleCreateConnection,
-        backgroundColor:Colors.transparent,
-        elevation: 0,
-        shape: const CircleBorder(
-          side: BorderSide(color: AppColors.primaryColor, width: 2), // Border color and width
-        ),
-        child: const Icon(Icons.check, color:AppColors.primaryColor),
       ),
       bottomNavigationBar: CommonFooter(
         currentIndex: _selectedIndex,

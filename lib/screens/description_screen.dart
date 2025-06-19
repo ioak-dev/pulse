@@ -5,6 +5,7 @@ import '../screens/module_detail_screen.dart';
 import '../screens/home_screen.dart';
 import '../widgets/common_footer.dart';
 import '../styles/colors.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class DescriptionScreen extends StatefulWidget {
   final String appName;
@@ -73,14 +74,15 @@ class _DescriptionScreenState extends State<DescriptionScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.primaryDarkerColor), // Change icon and color
+          icon: const Icon(FontAwesomeIcons.caretLeft, color: Colors.black87),
           onPressed: () {
             Navigator.pop(context);
           },
         ),
         title: const Text('Modules List'),
+        backgroundColor: Colors.white,
         titleTextStyle: const TextStyle(
-            color: AppColors.primaryColor,
+            color: Colors.black87,
             fontSize: 24,
             fontWeight: FontWeight.bold,
             fontFamily: "Roboto"
@@ -124,11 +126,14 @@ class _DescriptionScreenState extends State<DescriptionScreen> {
                       child: Container(
                         decoration: const BoxDecoration(
                           border: Border(
-                            bottom: BorderSide(color: Colors.grey, width: 0.5), // Bottom border
+                            // top: BorderSide(color: Colors.grey, width: 0.1),
+                            // right: BorderSide(color: Colors.grey, width: 0.1),
+                            bottom: BorderSide(color: Colors.grey, width: 0.1),
+                            left: BorderSide(color: Colors.blueGrey, width: 2.0),
                           ),
                         ),
                         child: Card(
-                          color: Colors.transparent,
+                          color: Colors.white,
                           elevation: 0,
                           shape: const RoundedRectangleBorder(
                             side: BorderSide.none, // No extra borders
@@ -142,10 +147,12 @@ class _DescriptionScreenState extends State<DescriptionScreen> {
                                   width: MediaQuery.of(context).size.width * 0.2,
                                   child: CircleAvatar(
                                     radius: 25,
-                                    backgroundColor: AppColors.primaryColor,
+                                    // backgroundColor: AppColors.primaryColor,
                                     child: ClipOval(
                                       child: SvgPicture.network(
                                         logoDark,
+                                        color: Colors.white,
+                                        // colorBlendMode: BlendMode.srcIn,
                                         width: 50,
                                         height: 50,
                                         placeholderBuilder: (context) => Container(
@@ -153,7 +160,7 @@ class _DescriptionScreenState extends State<DescriptionScreen> {
                                           height: 50,
                                           color: Colors.red[50],
                                           child: const Icon(
-                                            Icons.error_outline,
+                                            FontAwesomeIcons.circleExclamation,
                                             color: Colors.red,
                                             size: 25,
                                           ),
@@ -192,7 +199,7 @@ class _DescriptionScreenState extends State<DescriptionScreen> {
                                 Expanded(
                                   flex: 1,
                                   child: IconButton(
-                                    icon: const Icon(Icons.arrow_forward_ios, color: AppColors.primaryColor),
+                                    icon: const Icon(FontAwesomeIcons.chevronRight, color: Colors.grey,size: 16),
                                     onPressed: () =>
                                     {
                                     Navigator.push(
