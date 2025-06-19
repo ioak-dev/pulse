@@ -82,8 +82,7 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
               },
             ),
             title: Text(
-              (widget.editData == null ? 'New Entry' : 'Edit Entry')
-                  .toUpperCase(),
+              (widget.editData == null ? 'New Entry' : 'Edit Entry'),
               style: const TextStyle(
                   color: AppColors.primaryColor,
                   fontSize: 24,
@@ -127,25 +126,139 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
                         }),
                         const SizedBox(height: 20),
                         if (widget.editData != null)
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                width: 180, // Reduced width
-                                child: ElevatedButton(
-                                  onPressed: _deleteEntry,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.red,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8.0),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                // Edit/Update button
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 48,
+                                    child: ElevatedButton(
+                                      onPressed: _submitForm,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Theme.of(context).colorScheme.primary,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8.0),
+                                        ),
+                                      ),
+                                      child: const Text('Update', style: TextStyle(color: Colors.white)),
                                     ),
                                   ),
-                                  child: const Text('Delete',
-                                      style: TextStyle(color: Colors.white)),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 8),
+                                // Delete button with trash icon
+                                SizedBox(
+                                  height: 48,
+                                  width: 48,
+                                  child: ElevatedButton(
+                                    onPressed: () async {
+                                      final confirm = await showDialog<bool>(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: const Text('Confirm Delete'),
+                                          content: const Text(
+                                              'Are you sure you want to delete this entry?'),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.of(context).pop(
+                                                      false),
+                                              child: const Text('Cancel'),
+                                            ),
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.of(context).pop(
+                                                      true),
+                                              child: const Text('Delete',
+                                                  style: TextStyle(
+                                                      color: Colors.red)),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                      if (confirm == true) {
+                                        await _deleteEntry();
+                                      }
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8.0),
+                                      ),
+                                      padding: EdgeInsets.zero,
+                                    ),
+                                    child: const Icon(Icons.delete,
+                                        color: Colors.white),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                // Cancel button with cross icon
+                                SizedBox(
+                                  height: 48,
+                                  width: 48,
+                                  child: ElevatedButton(
+                                    onPressed: () => Navigator.of(context).pop(),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.grey,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8.0),
+                                      ),
+                                      padding: EdgeInsets.zero,
+                                      elevation: 0,
+                                    ),
+                                    child: const Icon(Icons.close,
+                                        color: Colors.white),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                // Save button
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 48,
+                                    child: ElevatedButton(
+                                      onPressed: _submitForm,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Theme.of(context).colorScheme.primary,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8.0),
+                                        ),
+                                      ),
+                                      child: const Text('Save', style: TextStyle(color: Colors.white)),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                // Cancel button with cross icon
+                                SizedBox(
+                                  height: 48,
+                                  width: 48,
+                                  child: ElevatedButton(
+                                    onPressed: () => Navigator.of(context).pop(),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.grey,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8.0),
+                                      ),
+                                      padding: EdgeInsets.zero,
+                                      elevation: 0,
+                                    ),
+                                    child: const Icon(Icons.close, color: Colors.white),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
+                        const SizedBox(height: 20),
                       ],
                     ),
                   ),
@@ -160,17 +273,6 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
                   ),
                 ),
             ],
-          ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: _submitForm,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            shape: const CircleBorder(
-              side: BorderSide(
-                  color: AppColors.primaryColor,
-                  width: 2),
-            ),
-            child: const Icon(Icons.check, color: AppColors.primaryColor),
           ),
           bottomNavigationBar: CommonFooter(
             currentIndex: _selectedIndex,
