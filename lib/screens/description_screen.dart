@@ -124,13 +124,10 @@ class _DescriptionScreenState extends State<DescriptionScreen> {
                       );
                     },
                       child: Container(
-                        decoration: const BoxDecoration(
-                          border: Border(
-                            // top: BorderSide(color: Colors.grey, width: 0.1),
-                            // right: BorderSide(color: Colors.grey, width: 0.1),
-                            bottom: BorderSide(color: Colors.grey, width: 0.1),
-                            left: BorderSide(color: Colors.blueGrey, width: 2.0),
-                          ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade200),
                         ),
                         child: Card(
                           color: Colors.white,
