@@ -26,6 +26,7 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
   final _formKey = GlobalKey<FormState>();
   late Map<String, dynamic> _formValues;
   bool _isSubmitting = false;
+  bool _isLoading = false;
   var _selectedIndex = 0;
   final NetworkHelper _networkHelper =
       NetworkHelper('https://api.ioak.io:8100');
@@ -54,76 +55,250 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
     });
   }
 
+  String _formatDate(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return '';
+    try {
+      final parts = dateStr.split('-');
+      if (parts.length == 3) {
+        return '${parts[2]}-${parts[1]}-${parts[0]}';
+      }
+      return dateStr;
+    } catch (_) {
+      return dateStr;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final fields = Map<String, dynamic>.from(widget.schema['domain']['fields'])
-      ..remove('id');
-    final options = widget.schema['domain']['options'] as Map<String, dynamic>;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          widget.editData == null
-              ? 'NEW ENTRY'
-              : 'EDIT ENTRY', // Capitalized header
-          style: const TextStyle(
-              color: AppColors.primaryColor,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              fontFamily: "Roboto"),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 1,
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                ...fields.entries.map((entry) {
-                  return _buildFormField(
-                    fieldName: entry.key,
-                    fieldType: entry.value,
-                    options: options[entry.key],
-                  );
-                }),
-                const SizedBox(height: 20),
-                if (widget.editData != null)
-                  ElevatedButton(
-                    onPressed: _deleteEntry,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8.0),
-                      ),
-                    ),
-                    child: const Text('Delete',
-                        style: TextStyle(color: Colors.white)),
-                  ),
-              ],
+    return Stack(
+      children: [
+        Scaffold(
+          appBar: AppBar(
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                  color: AppColors.primaryColor),
+              onPressed: () {
+                Navigator.pop(context);
+              },
             ),
+            title: Text(
+              (widget.editData == null ? 'New Entry' : 'Edit Entry'),
+              style: const TextStyle(
+                  color: AppColors.primaryColor,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: "Roboto"),
+            ),
+            centerTitle: true,
+            backgroundColor: Colors.white,
+            elevation: 1,
+          ),
+          body: Stack(
+            children: [
+              SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        ...Map<String, dynamic>.from(
+                                widget.schema['domain']['fields'])
+                            .entries
+                            .where((entry) =>
+                                entry.key.toLowerCase() != 'id' &&
+                                (widget.editData == null ||
+                                    (widget.editData?[entry.key]
+                                            ?.toString()
+                                            .isNotEmpty ??
+                                        false)))
+                            .map((entry) {
+                          final fieldName = entry.key;
+                          final fieldType = entry.value;
+                          final options =
+                              widget.schema['domain']['options'][fieldName];
+
+                          return _buildDynamicField(
+                            fieldName: fieldName,
+                            fieldType: fieldType,
+                            options: options,
+                          );
+                        }),
+                        const SizedBox(height: 20),
+                        if (widget.editData != null)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                // Edit/Update button
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 48,
+                                    child: ElevatedButton(
+                                      onPressed: _submitForm,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Theme.of(context).colorScheme.primary,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8.0),
+                                        ),
+                                      ),
+                                      child: const Text('Update', style: TextStyle(color: Colors.white)),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                // Delete button with trash icon
+                                SizedBox(
+                                  height: 48,
+                                  width: 48,
+                                  child: ElevatedButton(
+                                    onPressed: () async {
+                                      final confirm = await showDialog<bool>(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: const Text('Confirm Delete'),
+                                          content: const Text(
+                                              'Are you sure you want to delete this entry?'),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.of(context).pop(
+                                                      false),
+                                              child: const Text('Cancel'),
+                                            ),
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.of(context).pop(
+                                                      true),
+                                              child: const Text('Delete',
+                                                  style: TextStyle(
+                                                      color: Colors.red)),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                      if (confirm == true) {
+                                        await _deleteEntry();
+                                      }
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8.0),
+                                      ),
+                                      padding: EdgeInsets.zero,
+                                    ),
+                                    child: const Icon(Icons.delete,
+                                        color: Colors.white),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                // Cancel button with cross icon
+                                SizedBox(
+                                  height: 48,
+                                  width: 48,
+                                  child: ElevatedButton(
+                                    onPressed: () => Navigator.of(context).pop(),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.grey,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8.0),
+                                      ),
+                                      padding: EdgeInsets.zero,
+                                      elevation: 0,
+                                    ),
+                                    child: const Icon(Icons.close,
+                                        color: Colors.white),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                // Save button
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 48,
+                                    child: ElevatedButton(
+                                      onPressed: _submitForm,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Theme.of(context).colorScheme.primary,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8.0),
+                                        ),
+                                      ),
+                                      child: const Text('Save', style: TextStyle(color: Colors.white)),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                // Cancel button with cross icon
+                                SizedBox(
+                                  height: 48,
+                                  width: 48,
+                                  child: ElevatedButton(
+                                    onPressed: () => Navigator.of(context).pop(),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.grey,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8.0),
+                                      ),
+                                      padding: EdgeInsets.zero,
+                                      elevation: 0,
+                                    ),
+                                    child: const Icon(Icons.close, color: Colors.white),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              if (_isSubmitting)
+                Container(
+                  color: Colors.black
+                      .withOpacity(0.2), // Semi-transparent overlay
+                  child: const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+            ],
+          ),
+          bottomNavigationBar: CommonFooter(
+            currentIndex: _selectedIndex,
+            onTap: _onItemTapped,
           ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _submitForm,
-        child: const Icon(Icons.check),
-      ),
-      bottomNavigationBar: CommonFooter(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-      ),
+        if (_isLoading)
+          Container(
+            color: Colors.black.withOpacity(0.2), // Semi-transparent overlay
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          ),
+      ],
     );
   }
 
-  Widget _buildFormField({
+  Widget _buildDynamicField({
     required String fieldName,
     required String fieldType,
     dynamic options,
   }) {
+    if (fieldType == 'null' || fieldName.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: Column(
@@ -259,7 +434,7 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
       case 'date':
         return TextFormField(
           controller: TextEditingController(
-            text: _formValues[fieldName]?.toString(),
+            text: _formatDate(_formValues[fieldName]?.toString()),
           ),
           readOnly: true,
           decoration: const InputDecoration(
@@ -376,6 +551,7 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
   }
 
   Future<void> _deleteEntry() async {
+    setState(() => _isSubmitting = true);
     final deleteAction = widget.schema['endpoints']?.firstWhere(
       (action) => action['type'] == 'DELETE',
       orElse: () => null,
@@ -398,5 +574,6 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
         const SnackBar(content: Text('Delete action not found!')),
       );
     }
+    setState(() => _isSubmitting = false);
   }
 }

@@ -1,8 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:timeago/timeago.dart' as timeago;
 import '../utils/network_helper.dart';
 import '../widgets/common_footer.dart';
 import 'entry_form_screen.dart';
 import '../styles/colors.dart';
+
+// Extension to add 'capitalize' method to String
+extension StringCasingExtension on String {
+  String capitalize() {
+    if (isEmpty) return this;
+    return '${this[0].toUpperCase()}${substring(1)}';
+  }
+}
 
 class ModuleDetailScreen extends StatefulWidget {
   final String moduleName;
@@ -19,6 +28,20 @@ class ModuleDetailScreen extends StatefulWidget {
 }
 
 class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
+  // Static color array with 10 values
+  static const List<Map<String, dynamic>> categoryColorArray = [
+    {'labelColor': Color(0xFFE1F5FE), 'bgColor': Color(0xFF0288D1)},
+    {'labelColor': Color(0xFFE3F2FD), 'bgColor': Color(0xFFD32F2F)},
+    {'labelColor': Color(0xFFFFEBEE), 'bgColor': Color(0xFF1976D2)},
+    {'labelColor': Color(0xFFF3E5F5), 'bgColor': Color(0xFF8E24AA)},
+    {'labelColor': Color(0xFFFFF8E1), 'bgColor': Color(0xFFFFA000)},
+    {'labelColor': Color(0xFFFFF3E0), 'bgColor': Color(0xFFF57C00)},
+    {'labelColor': Color(0xFFE8F5E9), 'bgColor': Color(0xFF388E3C)},
+    {'labelColor': Color(0xFFFFFDE7), 'bgColor': Color(0xFFFBC02D)},
+    {'labelColor': Color(0xFFF5F5F5), 'bgColor': Color(0xFF757575)},
+    {'labelColor': Color(0xFFE0F2F1), 'bgColor': Color(0xFF00897B)},
+  ];
+
   late Map<String, dynamic> _schema;
   List<dynamic> _listData = [];
   bool _isLoading = true;
@@ -31,6 +54,7 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
 
   Map<String, String> _categoryMap = {};
   Map<String, String> _tagMap = {};
+  Map<String, Map<String, dynamic>> _categoryColorMap = {};
 
   void _onItemTapped(int index) {
     setState(() {
@@ -51,6 +75,7 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
   }
 
   Future<void> _loadModuleData() async {
+    setState(() => _isLoading = true);
     try {
       final schemaResponse = await _networkHelper.get(
         '/schema/module/${widget.moduleName}',
@@ -62,16 +87,22 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
       setState(() {
         _schema = schemaResponse;
 
-        // Extract category and tagId mappings
+        // Extract and sort category names alphabetically
         final categoryOptions =
-            _schema['domain']?['options']?['category'] ?? [];
+            List.from(_schema['domain']?['options']?['category'] ?? [])
+              ..sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
         final tagOptions = _schema['domain']?['options']?['tagId'] ?? [];
 
         _categoryMap = {
           for (var option in categoryOptions) option['id']: option['name']
         };
 
-        _tagMap = {for (var option in tagOptions) option['id']: option['name']};
+        // Map sorted category names to color array by index
+        final sortedCategoryNames = categoryOptions.map((c) => c['name'] as String).toList();
+        _categoryColorMap = {
+          for (int i = 0; i < sortedCategoryNames.length; i++)
+            sortedCategoryNames[i]: categoryColorArray[i % categoryColorArray.length]
+        };
       });
 
       final listAction = _schema['endpoints']?.firstWhere(
@@ -87,14 +118,41 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
 
         setState(() {
           _listData = List<dynamic>.from(listResponse ?? []);
-          _isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();
-        _isLoading = false;
       });
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  String _formatDate(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return '';
+    try {
+      final parts = dateStr.split('-');
+      if (parts.length == 3) {
+        return '${parts[2]}-${parts[1]}-${parts[0]}';
+      }
+      return dateStr;
+    } catch (_) {
+      return dateStr;
+    }
+  }
+
+  String _ordinalDay(int day) {
+    if (day >= 11 && day <= 13) return '${day}th';
+    switch (day % 10) {
+      case 1:
+        return '${day}st';
+      case 2:
+        return '${day}nd';
+      case 3:
+        return '${day}rd';
+      default:
+        return '${day}th';
     }
   }
 
@@ -102,8 +160,14 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.primaryColor),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
         title: Text(
-          widget.moduleName.toUpperCase(), // Capitalized header
+          widget.moduleName.capitalize(),
           style: const TextStyle(
             color: AppColors.primaryColor,
             fontSize: 24,
@@ -114,17 +178,27 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 1,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
       ),
-      body: _buildBody(),
+      body: Stack(
+        children: [
+          _buildBody(),
+          if (_isLoading)
+            Container(
+              color: Colors.black.withOpacity(0.2), // Semi-transparent overlay
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _navigateToEntryForm(context, null),
-        child: const Icon(Icons.add),
+        backgroundColor:Colors.transparent,
+        elevation: 0,
+        shape: const CircleBorder(
+          side: BorderSide(color: AppColors.primaryColor, width: 2), // Border color and width
+        ),
+        child: const Icon(Icons.add, color:AppColors.primaryColor),
       ),
       bottomNavigationBar: CommonFooter(
         currentIndex: _selectedIndex,
@@ -165,14 +239,58 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
 
   Map<String, List<dynamic>> _groupDataByDate() {
     final Map<String, List<dynamic>> groupedData = {};
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
     for (var item in _listData) {
-      final date = item['billDate'] ?? 'Unknown Date';
-      if (!groupedData.containsKey(date)) {
-        groupedData[date] = [];
+      final rawDate = item['billDate'] ?? 'Unknown Date';
+      String groupLabel = rawDate;
+      try {
+        final parts = rawDate.split('-');
+        if (parts.length == 3) {
+          final year = int.tryParse(parts[0]);
+          final month = int.tryParse(parts[1]);
+          final day = int.tryParse(parts[2]);
+          if (year != null && month != null && day != null) {
+            final itemDate = DateTime(year, month, day);
+            if (itemDate == today) {
+              groupLabel = 'Today';
+            } else if (itemDate == yesterday) {
+              groupLabel = 'Yesterday';
+            } else {
+              final label = timeago.format(itemDate, locale: 'en');
+              String dateStr = '${_ordinalDay(itemDate.day)} ${_monthName(itemDate.month)}';
+              String dateStrWithYear = '$dateStr ${itemDate.year}';
+              if (itemDate.year == today.year) {
+                groupLabel = '${_capitalize(label)} - $dateStr';
+              } else {
+                groupLabel = '${_capitalize(label)} - $dateStrWithYear';
+              }
+            }
+          }
+        }
+      } catch (_) {
+        groupLabel = rawDate;
       }
-      groupedData[date]!.add(item);
+      if (!groupedData.containsKey(groupLabel)) {
+        groupedData[groupLabel] = [];
+      }
+      groupedData[groupLabel]!.add(item);
     }
     return groupedData;
+  }
+
+  String _monthName(int month) {
+    const months = [
+      '', 'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return months[month];
+  }
+
+  String _capitalize(String s) {
+    if (s.isEmpty) return s;
+    return s[0].toUpperCase() + s.substring(1);
   }
 
   Widget _buildListItem(dynamic item) {
@@ -208,12 +326,8 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    item['billDate'] ?? 'Unknown Date',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey,
-                    ),
-                  ),
+                  if (item['category'] != null && _categoryMap[item['category']] != null)
+                    _buildCategoryPill(_categoryMap[item['category']]),
                 ],
               ),
             ),
@@ -225,6 +339,27 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryPill(String? catName) {
+    if (catName == null) return const SizedBox.shrink();
+    final catColor = _categoryColorMap[catName];
+    if (catColor == null) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: catColor['bgColor'],
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: catColor['labelColor'], width: 1),
+      ),
+      child: Text(
+        catName,
+        style: TextStyle(
+          color: catColor['labelColor'],
+          fontWeight: FontWeight.w500,
         ),
       ),
     );
